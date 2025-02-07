@@ -1,9 +1,9 @@
-# pip install streamlit SpeechRecognition gTTS
 import streamlit as st
 import speech_recognition as sr
 from gtts import gTTS
 import base64
 from io import BytesIO
+from streamlit_mic_recorder import mic_recorder
 
 def play(audio_data):
     b64 = base64.b64encode(audio_data).decode("utf-8")
@@ -23,6 +23,7 @@ def process(audio):
         speech_audio.write_to_fp(fp)
         fp.seek(0)
         play(fp.read())
+    return text
 
 st.set_page_config(
     page_title="Echo",
@@ -30,11 +31,15 @@ st.set_page_config(
 )
 st.title("Echo")
 r = sr.Recognizer() 
-if "audio_input_key_counter" not in st.session_state:
-    st.session_state.audio_input_key_counter = 0
-
-audio_input_key = f"audio_input_key_{st.session_state.audio_input_key_counter}"
-if audio := st.audio_input(label=" ", label_visibility="collapsed", key=audio_input_key):
-    process(audio)
-    del st.session_state[audio_input_key]
-    st.session_state.audio_input_key_counter += 1
+if audio := mic_recorder(
+    start_prompt="🎙 Record",
+    stop_prompt="📤 Stop",
+    just_once=True,
+    use_container_width=True,
+    format="wav",
+    key="recorder",
+):
+    audio_bio = BytesIO(audio["bytes"])
+    audio_bio.name = "audio.wav"
+    text = process(audio_bio)
+    st.button(text)
