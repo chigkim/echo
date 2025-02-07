@@ -5,6 +5,7 @@ import base64
 from io import BytesIO
 from streamlit_mic_recorder import mic_recorder
 
+
 @st.cache_data
 def load_css(file_name):
     with open(file_name) as f:
@@ -20,16 +21,18 @@ def play(audio_data):
     """
     st.markdown(md, unsafe_allow_html=True)
 
+
 def process(audio):
     with sr.AudioFile(audio) as data:
         source = r.record(data)
-        text = r.recognize_google(source, language='en')
-        speech_audio = gTTS(text=text, lang="en", tld='us', slow=False)
+        text = r.recognize_google(source, language="en")
+        speech_audio = gTTS(text=text, lang="en", tld="us", slow=False)
         fp = BytesIO()
         speech_audio.write_to_fp(fp)
         fp.seek(0)
         play(fp.read())
     return text
+
 
 st.set_page_config(
     page_title="Echo",
@@ -37,7 +40,7 @@ st.set_page_config(
 )
 st.title("Echo")
 load_css("style.css")
-r = sr.Recognizer() 
+r = sr.Recognizer()
 if audio := mic_recorder(
     start_prompt="🎙 Record",
     stop_prompt="📤 Stop",
