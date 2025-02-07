@@ -52,4 +52,5 @@ if audio := mic_recorder(
     audio_bio = BytesIO(audio["bytes"])
     audio_bio.name = "audio.wav"
     text = process(audio_bio)
-    st.button(text)
+    if st.button(text):
+        st.markdown(text)
