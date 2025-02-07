@@ -5,6 +5,12 @@ import base64
 from io import BytesIO
 from streamlit_mic_recorder import mic_recorder
 
+@st.cache_data
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+
 def play(audio_data):
     b64 = base64.b64encode(audio_data).decode("utf-8")
     md = f"""
@@ -30,11 +36,12 @@ st.set_page_config(
     page_icon=":material/speaker:",
 )
 st.title("Echo")
+load_css("style.css")
 r = sr.Recognizer() 
 if audio := mic_recorder(
     start_prompt="🎙 Record",
     stop_prompt="📤 Stop",
-    just_once=True,
+    just_once=False,
     use_container_width=True,
     format="wav",
     key="recorder",
