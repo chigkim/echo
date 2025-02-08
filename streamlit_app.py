@@ -14,13 +14,13 @@ def load_css(file_name):
 
 def play(audio_data):
     b64 = base64.b64encode(audio_data).decode("utf-8")
-    md = f"""
-    <audio autoplay controls>
+    html_str = f"""
+    <audio id="player" autoplay controls>
     <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
     </audio>
     """
-    print(len(md))
-    st.markdown(md, unsafe_allow_html=True)
+    print(len(html_str))
+    st.html(html_str)
 
 
 def transcribe(audio):
