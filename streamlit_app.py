@@ -15,10 +15,11 @@ def load_css(file_name):
 def play(audio_data):
     b64 = base64.b64encode(audio_data).decode("utf-8")
     md = f"""
-    <audio autoplay>
+    <audio autoplay controls>
     <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
     </audio>
     """
+    print(len(md))
     st.markdown(md, unsafe_allow_html=True)
 
 
@@ -27,15 +28,20 @@ def transcribe(audio):
     with sr.AudioFile(audio) as data:
         source = r.record(data)
         text = r.recognize_google(source, language="en")
-        speech_audio = gTTS(text=text, lang="en", tld="us", slow=False)
-        fp = BytesIO()
-        speech_audio.write_to_fp(fp)
-        fp.seek(0)
-        play(fp.read())
-    return text
+        return text
+
+
+def tts(text):
+    speech_audio = gTTS(text=text, lang="en", tld="us", slow=False)
+    fp = BytesIO()
+    speech_audio.write_to_fp(fp)
+    fp.seek(0)
+    return fp
 
 
 def handle_audio():
+    speech_audio = None
+    transcription = None
     with st.sidebar:
         if audio := mic_recorder(
             start_prompt="🎙 Record",
@@ -47,7 +53,13 @@ def handle_audio():
         ):
             audio_bio = BytesIO(audio["bytes"])
             audio_bio.name = "audio.wav"
-            return transcribe(audio_bio)
+            transcription = transcribe(audio_bio)
+            print(transcription)
+            speech_audio = tts(transcription).read()
+    if speech_audio:
+        play(speech_audio)
+    if transcription:
+        return transcription
 
 
 def show_messages():
