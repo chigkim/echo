@@ -6,6 +6,7 @@ from io import BytesIO
 from streamlit_mic_recorder import mic_recorder
 import streamlit.components.v1 as components
 from streamlit_javascript import st_javascript
+import json
 
 @st.cache_data
 def load_css(file_name):
@@ -99,8 +100,9 @@ headers = st.context.headers.to_dict()
 for k, v in headers.items():
     st.markdown(f"{k}: {v}")
 st.markdown(st.context.ip_address)
-client_ip = st_javascript("await fetch('https://api.ipify.org').then(r=>r.text())")
-st.markdown(client_ip)
+client_info = st_javascript("await fetch('https://aisimbot.chikim.com/client-info').then(r=>r.text())")
+client_info = json.loads(client_info)
+st.markdown(client_info)
 #load_css("style.css")
 if "text_chat_enabled" not in st.session_state:
     st.session_state.text_chat_enabled = False
