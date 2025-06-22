@@ -8,10 +8,17 @@ import streamlit.components.v1 as components
 from streamlit_javascript import st_javascript
 import json
 
-@st.cache_data
-def load_css(file_name):
-    with open(file_name) as f:
-        st.html(f"<style>{f.read()}</style>")
+
+@st.cache_data(show_spinner=False)
+def _load_css(file_name: str) -> str:
+    with open(file_name, encoding="utf-8") as f:
+        return f.read()
+
+
+def local_css(file_name: str):
+    css = _load_css(file_name)
+    st.html(f"<style>{css}</style>")
+
 
 
 def play(audio_data):
@@ -87,6 +94,23 @@ def toggle_text_chat():
     st.session_state.text_chat_enabled = not st.session_state.text_chat_enabled
 
 
+def get_client_info():
+    info = {"browser": "Unknown", "os": "Unknown"}
+    try:
+        client_info = st_javascript(
+            "await fetch('https://aisimbot.chikim.com/client-info').then(r=>r.text())"
+        )
+        if not client_info:
+            st.stop()
+        if client_info:
+            client_info = json.loads(client_info)
+            return client_info
+    except Exception as e:
+        log.exception(e)
+    return info
+
+
+
 st.set_page_config(
     page_title="Echo",
     page_icon=":material/speaker:",
@@ -94,16 +118,26 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 st.title("Echo")
+local_css("style.css")
 #st.markdown(st.context.request_ip)
 #st.markdown(dir(st.context.headers))
+#st.markdown(st.context.ip_address)
 headers = st.context.headers.to_dict()
 for k, v in headers.items():
     st.markdown(f"{k}: {v}")
-st.markdown(st.context.ip_address)
-client_info = st_javascript("await fetch('https://aisimbot.chikim.com/client-info').then(r=>r.text())")
-client_info = json.loads(client_info)
-st.markdown(client_info)
-#load_css("style.css")
+
+
+client_info = get_client_info()
+for k, v in client_info.items():
+    st.markdown(f"{k}: {v}")
+browser = client_info["browser"]
+safari = False
+if "Safari" in browser:
+    version = re.search(r"\d+\.\d+", browser)[0]
+    version = float(version)
+    if version >= 18.4:
+        st_javascript("alert('Safari is not supported. Please use Chrome browser instead.');return 0")
+
 if "text_chat_enabled" not in st.session_state:
     st.session_state.text_chat_enabled = False
     st.session_state.messages = []

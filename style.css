@@ -1,1 +1,6 @@
 /* css page styling */
+.stElementContainer:has(
+    iframe[title="streamlit_javascript.streamlit_javascript"]
+){
+    display: none !important;
+}
