@@ -4,23 +4,36 @@ from gtts import gTTS
 import base64
 from io import BytesIO
 from streamlit_mic_recorder import mic_recorder
-
+import streamlit.components.v1 as components
+from streamlit_javascript import st_javascript
 
 @st.cache_data
 def load_css(file_name):
     with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+        st.html(f"<style>{f.read()}</style>")
 
 
 def play(audio_data):
     b64 = base64.b64encode(audio_data).decode("utf-8")
     html_str = f"""
-    <audio id="player" autoplay controls>
+    <audio id="auto_player" autoplay>
     <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
     </audio>
+    <button onclick="document.getElementById('auto_player').play()">Play</button>
     """
     print(len(html_str))
-    st.html(html_str)
+    components.html(html_str)
+
+
+def get_player(audio_data):
+    b64 = base64.b64encode(audio_data).decode("utf-8")
+    html_str = f"""
+    <audio id="player">
+    <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+    </audio>
+    <button onclick="document.getElementById('player').play()">Play</button>
+    """
+    return html_str
 
 
 def transcribe(audio):
@@ -51,6 +64,7 @@ def handle_audio():
             format="wav",
             key="recorder",
         ):
+            components.html(get_player(audio["bytes"]))
             audio_bio = BytesIO(audio["bytes"])
             audio_bio.name = "audio.wav"
             transcription = transcribe(audio_bio)
@@ -79,7 +93,15 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 st.title("Echo")
-load_css("style.css")
+#st.markdown(st.context.request_ip)
+#st.markdown(dir(st.context.headers))
+headers = st.context.headers.to_dict()
+for k, v in headers.items():
+    st.markdown(f"{k}: {v}")
+st.markdown(st.context.ip_address)
+client_ip = st_javascript("await fetch('https://api.ipify.org').then(r=>r.text())")
+st.markdown(client_ip)
+#load_css("style.css")
 if "text_chat_enabled" not in st.session_state:
     st.session_state.text_chat_enabled = False
     st.session_state.messages = []
