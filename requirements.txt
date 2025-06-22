@@ -2,3 +2,4 @@ SpeechRecognition
 gTTS
 streamlit
 streamlit-mic-recorder
+streamlit_javascript
