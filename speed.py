@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 from tornado.web import Application, RequestHandler
 from tornado.routing import Rule, PathMatches
 
