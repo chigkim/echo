@@ -83,25 +83,20 @@ if st.session_state.test_id:
         try {{
             // —— DOWNLOAD ——
             const dlStart = performance.now();
-            const dlBuf   = await fetch(`/speedtest/download/${{SIZE}}`).then(r => r.arrayBuffer());
-            const dlEnd   = performance.now();
+            const dlResponse = await fetch(`/speedtest/download/${{SIZE}}`);
+            const dlBuf = await dlResponse.arrayBuffer();
+            const dlEnd = performance.now();
             const dlTimeS = (dlEnd - dlStart) / 1000;
-            const dlBytes = dlBuf.byteLength;
-            const dlBits = dlBytes * 8;
-            const dlBps = dlBits / dlTimeS; // Bits per second
-            const dlMbps = dlBps / 1000000; // Mega bits per second
-            console.log('⬇️ Download', dlBytes, 'bytes in', dlTimeS.toFixed(2), 's →', dlMbps.toFixed(2), 'Mbps');
+            const dlMbps = (dlBuf.byteLength * 8) / dlTimeS / 1e6;
+            console.log('⬇️ Download', dlBuf.byteLength, 'bytes in', dlTimeS.toFixed(2), 's →', dlMbps.toFixed(2), 'Mbps');
 
             // —— UPLOAD ——
             const ulStart = performance.now();
             await fetch('/speedtest/upload', {{ method: 'POST', body: dlBuf }});
-            const ulEnd   = performance.now();
+            const ulEnd = performance.now();
             const ulTimeS = (ulEnd - ulStart) / 1000;
-            const ulBytes = dlBuf.byteLength;
-            const ulBits = ulBytes * 8;
-            const ulBps = ulBits / ulTimeS; // Bits per second
-            const ulMbps = ulBps / 1000000; // Mega bits per second
-            console.log('⬆️ Upload', ulBytes, 'bytes in', ulTimeS.toFixed(2), 's →', ulMbps.toFixed(2), 'Mbps');
+            const ulMbps = (dlBuf.byteLength * 8) / ulTimeS / 1e6;
+            console.log('⬆️ Upload', dlBuf.byteLength, 'bytes in', ulTimeS.toFixed(2), 's →', ulMbps.toFixed(2), 'Mbps');
 
             const totalTime = (performance.now() - start) / 1000;
             console.log('🏁 Speed-test complete in', totalTime.toFixed(2), 's');
