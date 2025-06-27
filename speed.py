@@ -19,6 +19,11 @@ log = logging.getLogger(__name__)
 # 1. Register Tornado handlers once
 # ----------------------------------------------------------------------------
 
+# Create a 1MB chunk of random data to be reused.
+# This is much faster than generating it on every request.
+_RANDOM_CHUNK = os.urandom(1 * 1024 * 1024)
+
+
 @st.cache_resource()
 def _setup_speed_handlers():
     """Expose /speedtest/download and /speedtest/upload endpoints."""
@@ -27,7 +32,8 @@ def _setup_speed_handlers():
         async def get(self, size_str: str):
             size = int(size_str)
             self.set_header("Content-Type", "application/octet-stream")
-            self.write(os.urandom(size))
+            payload = (_RANDOM_CHUNK * (size // len(_RANDOM_CHUNK) + 1))[:size]
+            self.write(payload)
             log.info("Served download payload: %s bytes", size)
 
     class UploadHandler(RequestHandler):
@@ -81,16 +87,12 @@ if st.session_state.test_id:
             const dlMbps  = (dlBuf.byteLength * 8) / ((dlEnd - dlStart) / 1000) / 1e6;
             console.log('⬇️ Download', dlBuf.byteLength, 'bytes @', dlMbps.toFixed(2), 'Mbps');
 
-            // —— UPLOAD ——  (crypto.getRandomValues limited to 65 536 bytes)
-            const data = new Uint8Array(SIZE);
-            for (let offset = 0; offset < SIZE; offset += 65536) {{
-                crypto.getRandomValues(data.subarray(offset, Math.min(offset + 65536, SIZE)));
-            }}
+            // —— UPLOAD ——
             const ulStart = performance.now();
-            await fetch('/speedtest/upload', {{ method: 'POST', body: data }});
+            await fetch('/speedtest/upload', {{ method: 'POST', body: dlBuf }});
             const ulEnd   = performance.now();
-            const ulMbps  = (data.byteLength * 8) / ((ulEnd - ulStart) / 1000) / 1e6;
-            console.log('⬆️ Upload', data.byteLength, 'bytes @', ulMbps.toFixed(2), 'Mbps');
+            const ulMbps  = (dlBuf.byteLength * 8) / ((ulEnd - ulStart) / 1000) / 1e6;
+            console.log('⬆️ Upload', dlBuf.byteLength, 'bytes @', ulMbps.toFixed(2), 'Mbps');
 
             return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2) }};
         }} catch (err) {{
