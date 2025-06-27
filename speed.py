@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 from tornado.web import Application, RequestHandler
 from tornado.routing import Rule, PathMatches
 
@@ -13,7 +13,7 @@ from tornado.routing import Rule, PathMatches
 # Logging
 # ----------------------------------------------------------------------------
 logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s", level=logging.INFO
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s", level=logging.DEBUG
 )
 log = logging.getLogger(__name__)
 
@@ -37,15 +37,17 @@ def _setup_speed_handlers():
             log.info("DownloadHandler received request for %s bytes", size)
             chunk_size = len(_RANDOM_CHUNK)
             bytes_to_write = 0
-            for _ in range(size // chunk_size):
+            for i in range(size // chunk_size):
                 self.write(_RANDOM_CHUNK)
                 await self.flush()
                 bytes_to_write += chunk_size
+                log.debug("DownloadHandler wrote chunk %s, total bytes: %s", i + 1, bytes_to_write)
             remaining_bytes = size % chunk_size
             if remaining_bytes > 0:
                 self.write(_RANDOM_CHUNK[:remaining_bytes])
                 await self.flush()
                 bytes_to_write += remaining_bytes
+                log.debug("DownloadHandler wrote remaining bytes: %s, total bytes: %s", remaining_bytes, bytes_to_write)
             self.finish()
             log.info("DownloadHandler finished writing %s bytes", bytes_to_write)
 
