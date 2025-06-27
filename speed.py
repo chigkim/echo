@@ -85,20 +85,22 @@ if st.session_state.test_id:
             const dlStart = performance.now();
             const dlBuf   = await fetch(`/speedtest/download/${{SIZE}}`).then(r => r.arrayBuffer());
             const dlEnd   = performance.now();
-            const dlMbps  = (dlBuf.byteLength * 8) / ((dlEnd - dlStart) / 1000) / 1e6;
-            console.log('⬇️ Download', dlBuf.byteLength, 'bytes @', dlMbps.toFixed(2), 'Mbps');
+            const dlTimeS = (dlEnd - dlStart) / 1000;
+            const dlMbps  = (dlBuf.byteLength * 8) / dlTimeS / 1e6;
+            console.log('⬇️ Download', dlBuf.byteLength, 'bytes in', dlTimeS, 's →', dlMbps.toFixed(2), 'Mbps');
 
             // —— UPLOAD ——
             const ulStart = performance.now();
             await fetch('/speedtest/upload', {{ method: 'POST', body: dlBuf }});
             const ulEnd   = performance.now();
-            const ulMbps  = (dlBuf.byteLength * 8) / ((ulEnd - ulStart) / 1000) / 1e6;
-            console.log('⬆️ Upload', dlBuf.byteLength, 'bytes @', ulMbps.toFixed(2), 'Mbps');
+            const ulTimeS = (ulEnd - ulStart) / 1000;
+            const ulMbps  = (dlBuf.byteLength * 8) / ulTimeS / 1e6;
+            console.log('⬆️ Upload', dlBuf.byteLength, 'bytes in', ulTimeS, 's →', ulMbps.toFixed(2), 'Mbps');
 
             const totalTime = (performance.now() - start) / 1000;
             console.log('🏁 Speed-test complete in', totalTime.toFixed(2), 's');
 
-            return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2), totalTime: totalTime.toFixed(2) }};
+            return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2), totalTime: totalTime.toFixed(2), dlTime: dlTimeS.toFixed(2), ulTime: ulTimeS.toFixed(2) }};
         }} catch (err) {{
             console.error('❌ JS error', err);
             return {{ error: err.toString() }};
@@ -116,12 +118,14 @@ if st.session_state.test_id:
     if isinstance(result, dict) and not result.get("error"):
         st.metric("Total time", f"{result['totalTime']} s")
         col1, col2 = st.columns(2)
-        col1.metric("Download", f"{result['download']} Mbps")
-        col2.metric("Upload", f"{result['upload']} Mbps")
+        col1.metric("Download", f"{result['download']} Mbps", delta=f"{result['dlTime']} s")
+        col2.metric("Upload", f"{result['upload']} Mbps", delta=f"{result['ulTime']} s")
         log.info(
-            "Speed-test complete: ↓ %s Mbps, ↑ %s Mbps, total time %s s",
+            "Speed-test complete: ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s",
             result['download'],
+            result['dlTime'],
             result['upload'],
+            result['ulTime'],
             result['totalTime'],
         )
     else:
