@@ -77,6 +77,7 @@ if st.session_state.test_id:
 
     js_code = f"""(async () => {{
         const SIZE = {size_bytes};
+        const start = performance.now();
         console.log('▶️ Speed-test started —', SIZE/1024/1024, 'MB');
 
         try {{
@@ -94,7 +95,10 @@ if st.session_state.test_id:
             const ulMbps  = (dlBuf.byteLength * 8) / ((ulEnd - ulStart) / 1000) / 1e6;
             console.log('⬆️ Upload', dlBuf.byteLength, 'bytes @', ulMbps.toFixed(2), 'Mbps');
 
-            return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2) }};
+            const totalTime = (performance.now() - start) / 1000;
+            console.log('🏁 Speed-test complete in', totalTime.toFixed(2), 's');
+
+            return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2), totalTime: totalTime.toFixed(2) }};
         }} catch (err) {{
             console.error('❌ JS error', err);
             return {{ error: err.toString() }};
@@ -110,10 +114,16 @@ if st.session_state.test_id:
         st.stop()
 
     if isinstance(result, dict) and not result.get("error"):
+        st.metric("Total time", f"{result['totalTime']} s")
         col1, col2 = st.columns(2)
         col1.metric("Download", f"{result['download']} Mbps")
         col2.metric("Upload", f"{result['upload']} Mbps")
-        log.info("Speed-test complete: ↓ %s Mbps, ↑ %s Mbps", result['download'], result['upload'])
+        log.info(
+            "Speed-test complete: ↓ %s Mbps, ↑ %s Mbps, total time %s s",
+            result['download'],
+            result['upload'],
+            result['totalTime'],
+        )
     else:
         st.error(f"JavaScript execution error: {result}")
 
