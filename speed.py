@@ -85,6 +85,8 @@ if st.button("Run test"):
 # 4. Execute JavaScript when test_id set
 # ----------------------------------------------------------------------------
 
+from streamlit_javascript import st_javascript
+
 if st.session_state.test_id:
     size_bytes = st.session_state.payload
 
