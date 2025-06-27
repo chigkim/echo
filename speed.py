@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.6" # Incrementing version for this significant change
+__version__ = "0.0.8" # Incrementing version for this significant change
 
 # ----------------------------------------------------------------------------
 # Logging
@@ -49,10 +49,11 @@ if st.session_state.test_id:
     js_code = f"""(async () => {{
         const SIZE = {size_bytes};
         const start = performance.now();
-        console.log('▶️ Speed-test started —', SIZE/1024/1024, 'MB');
+        const debugLogs = [];
+        debugLogs.push(`▶️ Speed-test started — ${SIZE/1024/1024} MB`);
 
         try {{
-            console.log('JS: Starting download simulation...');
+            debugLogs.push('JS: Starting download simulation...');
             // —— DOWNLOAD (simulated: client-side data generation) ——
             const dlStart = performance.now();
             const dlBuf = new Uint8Array(SIZE);
@@ -63,26 +64,26 @@ if st.session_state.test_id:
             const dlEnd = performance.now();
             const dlTimeS = (dlEnd - dlStart) / 1000;
             const dlMbps = (SIZE * 8) / dlTimeS / 1e6;
-            console.log('JS: Download simulation complete. Size:', SIZE, 'bytes, Time:', dlTimeS.toFixed(2), 's, Speed:', dlMbps.toFixed(2), 'Mbps');
+            debugLogs.push(`⬇️ Download (simulated) ${SIZE} bytes in ${dlTimeS.toFixed(2)} s → ${dlMbps.toFixed(2)} Mbps`);
 
             // —— UPLOAD (client to Streamlit server via st_javascript) ——
             // The actual upload time will be measured by Streamlit's internal communication
             // We are temporarily NOT passing the large payload back to Python to debug the '0' return.
-            console.log('JS: Preparing return value (without payload)...');
+            debugLogs.push('JS: Preparing return value (without payload)...');
             const totalTime = (performance.now() - start) / 1000;
-            console.log('JS: Total test duration:', totalTime.toFixed(2), 's');
+            debugLogs.push(`🏁 Speed-test complete in ${totalTime.toFixed(2)} s`);
 
             return {{
                 download: dlMbps.toFixed(2),
-                upload: null, // Upload speed will be calculated on Python side
+                upload: null, # Upload speed will be calculated on Python side
                 totalTime: totalTime.toFixed(2),
                 dlTime: dlTimeS.toFixed(2),
-                ulTime: null // Upload time will be calculated on Python side
-                // payload: Array.from(dlBuf) // Temporarily removed
+                ulTime: null, # Upload time will be calculated on Python side
+                debugLogs: debugLogs
             }};
         }} catch (err) {{
-            console.error('❌ JS error', err);
-            return {{ error: err.toString() }};
+            debugLogs.push(`❌ JS error: ${err.toString()}`);
+            return {{ error: err.toString(), debugLogs: debugLogs }};
         }}
     }})()"""
 
@@ -104,8 +105,14 @@ if st.session_state.test_id:
             result['dlTime'],
             result['totalTime'],
         )
+        if "debugLogs" in result:
+            for log_msg in result["debugLogs"]:
+                log.info("JS Debug: %s", log_msg)
     else:
         st.error(f"JavaScript execution error: {result}")
+        if "debugLogs" in result:
+            for log_msg in result["debugLogs"]:
+                log.error("JS Debug: %s", log_msg)
 
     st.session_state.test_id = None
 
