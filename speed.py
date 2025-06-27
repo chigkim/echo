@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.8" # Incrementing version for this significant change
+__version__ = "0.0.9" # Incrementing version for this significant change
 
 # ----------------------------------------------------------------------------
 # Logging
@@ -46,46 +46,9 @@ from streamlit_javascript import st_javascript
 if st.session_state.test_id:
     size_bytes = st.session_state.payload
 
-    js_code = f"""(async () => {{
-        const SIZE = {size_bytes};
-        const start = performance.now();
-        const debugLogs = [];
-        debugLogs.push(`▶️ Speed-test started — ${SIZE/1024/1024} MB`);
-
-        try {{
-            debugLogs.push('JS: Starting download simulation...');
-            // —— DOWNLOAD (simulated: client-side data generation) ——
-            const dlStart = performance.now();
-            const dlBuf = new Uint8Array(SIZE);
-            // Simulate data generation (e.g., fill with random values)
-            for (let i = 0; i < SIZE; i++) {{
-                dlBuf[i] = Math.floor(Math.random() * 256);
-            }}
-            const dlEnd = performance.now();
-            const dlTimeS = (dlEnd - dlStart) / 1000;
-            const dlMbps = (SIZE * 8) / dlTimeS / 1e6;
-            debugLogs.push(`⬇️ Download (simulated) ${SIZE} bytes in ${dlTimeS.toFixed(2)} s → ${dlMbps.toFixed(2)} Mbps`);
-
-            // —— UPLOAD (client to Streamlit server via st_javascript) ——
-            // The actual upload time will be measured by Streamlit's internal communication
-            // We are temporarily NOT passing the large payload back to Python to debug the '0' return.
-            debugLogs.push('JS: Preparing return value (without payload)...');
-            const totalTime = (performance.now() - start) / 1000;
-            debugLogs.push(`🏁 Speed-test complete in ${totalTime.toFixed(2)} s`);
-
-            return {{
-                download: dlMbps.toFixed(2),
-                upload: null, # Upload speed will be calculated on Python side
-                totalTime: totalTime.toFixed(2),
-                dlTime: dlTimeS.toFixed(2),
-                ulTime: null, # Upload time will be calculated on Python side
-                debugLogs: debugLogs
-            }};
-        }} catch (err) {{
-            debugLogs.push(`❌ JS error: ${err.toString()}`);
-            return {{ error: err.toString(), debugLogs: debugLogs }};
-        }}
-    }})()"""
+    with open("static/js/speed_test.js", "r") as f:
+        js_code = f.read()
+    js_code = js_code.replace("__SIZE_PLACEHOLDER__", str(size_bytes))
 
     result = st_javascript(js_code, key=st.session_state.test_id)
     log.info("Component returned: %s", result)
