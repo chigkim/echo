@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.5" # Incrementing version for this significant change
+__version__ = "0.0.6" # Incrementing version for this significant change
 
 # ----------------------------------------------------------------------------
 # Logging
@@ -52,6 +52,7 @@ if st.session_state.test_id:
         console.log('▶️ Speed-test started —', SIZE/1024/1024, 'MB');
 
         try {{
+            console.log('JS: Starting download simulation...');
             // —— DOWNLOAD (simulated: client-side data generation) ——
             const dlStart = performance.now();
             const dlBuf = new Uint8Array(SIZE);
@@ -62,22 +63,22 @@ if st.session_state.test_id:
             const dlEnd = performance.now();
             const dlTimeS = (dlEnd - dlStart) / 1000;
             const dlMbps = (SIZE * 8) / dlTimeS / 1e6;
-            console.log('⬇️ Download (simulated)', SIZE, 'bytes in', dlTimeS.toFixed(2), 's →', dlMbps.toFixed(2), 'Mbps');
+            console.log('JS: Download simulation complete. Size:', SIZE, 'bytes, Time:', dlTimeS.toFixed(2), 's, Speed:', dlMbps.toFixed(2), 'Mbps');
 
             // —— UPLOAD (client to Streamlit server via st_javascript) ——
             // The actual upload time will be measured by Streamlit's internal communication
-            // We pass the generated data back to Python
-
+            // We are temporarily NOT passing the large payload back to Python to debug the '0' return.
+            console.log('JS: Preparing return value (without payload)...');
             const totalTime = (performance.now() - start) / 1000;
-            console.log('🏁 Speed-test complete in', totalTime.toFixed(2), 's');
+            console.log('JS: Total test duration:', totalTime.toFixed(2), 's');
 
             return {{
                 download: dlMbps.toFixed(2),
                 upload: null, // Upload speed will be calculated on Python side
                 totalTime: totalTime.toFixed(2),
                 dlTime: dlTimeS.toFixed(2),
-                ulTime: null, // Upload time will be calculated on Python side
-                payload: Array.from(dlBuf) // Pass the data back to Python
+                ulTime: null // Upload time will be calculated on Python side
+                // payload: Array.from(dlBuf) // Temporarily removed
             }};
         }} catch (err) {{
             console.error('❌ JS error', err);
@@ -92,27 +93,16 @@ if st.session_state.test_id:
         st.stop()
 
     if isinstance(result, dict) and not result.get("error"):
-        # Calculate upload speed on Python side
-        payload_size_bytes = len(result.get('payload', []))
-        # Assuming totalTime includes both download simulation and upload transfer
-        # For a more accurate ulTime, we would need a separate timer in JS for the actual transfer
-        # For now, we'll use the totalTime and subtract dlTime for a rough estimate
-        ul_time_s = float(result['totalTime']) - float(result['dlTime'])
-        ul_mbps = (payload_size_bytes * 8) / ul_time_s / 1e6 if ul_time_s > 0 else 0
-
         st.metric("Total time", f"{result['totalTime']} s")
         col1, col2 = st.columns(2)
         col1.metric("Download (simulated)", f"{result['download']} Mbps", delta=f"{result['dlTime']} s")
-        col2.metric("Upload (Streamlit transfer)", f"{ul_mbps:.2f} Mbps", delta=f"{ul_time_s:.2f} s")
+        col2.metric("Upload (Streamlit transfer)", "N/A", delta="N/A")
         log.info(
-            "Speed-test complete (v%s): ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s, Payload Size: %s bytes",
+            "Speed-test complete (v%s): ↓ %s Mbps (%s s), total time %s s",
             __version__,
             result['download'],
             result['dlTime'],
-            f"{ul_mbps:.2f}",
-            f"{ul_time_s:.2f}",
             result['totalTime'],
-            payload_size_bytes,
         )
     else:
         st.error(f"JavaScript execution error: {result}")
