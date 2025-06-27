@@ -4,6 +4,8 @@ import uuid
 import logging
 
 import streamlit as st
+
+__version__ = "0.0.1"
 from tornado.web import Application, RequestHandler
 from tornado.routing import Rule, PathMatches
 
@@ -77,7 +79,7 @@ size_mb = st.slider("Payload size (MB)", 1, 100, 10)
 if st.button("Run test"):
     st.session_state.test_id = str(uuid.uuid4())
     st.session_state.payload = size_mb * 1024 * 1024
-    log.info("Speed-test initiated — %.2f MB", size_mb)
+    log.info("Speed-test initiated (v%s) — %.2f MB", __version__, size_mb)
 
 # ----------------------------------------------------------------------------
 # 4. Execute JavaScript when test_id set
@@ -142,7 +144,8 @@ if st.session_state.test_id:
         col1.metric("Download", f"{result['download']} Mbps", delta=f"{result['dlTime']} s")
         col2.metric("Upload", f"{result['upload']} Mbps", delta=f"{result['ulTime']} s")
         log.info(
-            "Speed-test complete: ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s",
+            "Speed-test complete (v%s): ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s",
+            __version__,
             result['download'],
             result['dlTime'],
             result['upload'],
