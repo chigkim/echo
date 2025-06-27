@@ -32,16 +32,20 @@ def _setup_speed_handlers():
         async def get(self, size_str: str):
             size = int(size_str)
             self.set_header("Content-Type", "application/octet-stream")
+            log.info("DownloadHandler received request for %s bytes", size)
             chunk_size = len(_RANDOM_CHUNK)
+            bytes_to_write = 0
             for _ in range(size // chunk_size):
                 self.write(_RANDOM_CHUNK)
                 await self.flush()
+                bytes_to_write += chunk_size
             remaining_bytes = size % chunk_size
             if remaining_bytes > 0:
                 self.write(_RANDOM_CHUNK[:remaining_bytes])
                 await self.flush()
+                bytes_to_write += remaining_bytes
             self.finish()
-            log.info("Served download payload: %s bytes", size)
+            log.info("DownloadHandler finished writing %s bytes", bytes_to_write)
 
     class UploadHandler(RequestHandler):
         async def post(self):
@@ -91,7 +95,10 @@ if st.session_state.test_id:
             // —— DOWNLOAD ——
             const dlStart = performance.now();
             const dlResponse = await fetch(`/speedtest/download/${{SIZE}}`);
+            console.log('⬇️ Download Response Status:', dlResponse.status, dlResponse.statusText);
+            console.log('⬇️ Download Content-Length Header:', dlResponse.headers.get('Content-Length'));
             const dlBuf = await dlResponse.arrayBuffer();
+            console.log('⬇️ Download Received Bytes (dlBuf.byteLength):', dlBuf.byteLength);
             const dlEnd = performance.now();
             const dlTimeS = (dlEnd - dlStart) / 1000;
             const dlMbps = (dlBuf.byteLength * 8) / dlTimeS / 1e6;
