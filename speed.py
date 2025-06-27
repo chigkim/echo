@@ -32,8 +32,15 @@ def _setup_speed_handlers():
         async def get(self, size_str: str):
             size = int(size_str)
             self.set_header("Content-Type", "application/octet-stream")
-            payload = (_RANDOM_CHUNK * (size // len(_RANDOM_CHUNK) + 1))[:size]
-            self.write(payload)
+            chunk_size = len(_RANDOM_CHUNK)
+            for _ in range(size // chunk_size):
+                self.write(_RANDOM_CHUNK)
+                await self.flush()
+            remaining_bytes = size % chunk_size
+            if remaining_bytes > 0:
+                self.write(_RANDOM_CHUNK[:remaining_bytes])
+                await self.flush()
+            self.finish()
             log.info("Served download payload: %s bytes", size)
 
     class UploadHandler(RequestHandler):
