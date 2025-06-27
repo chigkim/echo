@@ -5,7 +5,7 @@ import logging
 
 import streamlit as st
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 from tornado.web import Application, RequestHandler
 from tornado.routing import Rule, PathMatches
 
@@ -122,13 +122,12 @@ if st.session_state.test_id:
                 upload: ulMbps.toFixed(2),
                 totalTime: totalTime.toFixed(2),
                 dlTime: dlTimeS.toFixed(2),
-                ulTime: ulTimeS.toFixed(2)
+                ulTime: ulTimeS.toFixed(2),
+                dlStatus: dlResponse.status,
+                dlStatusText: dlResponse.statusText,
+                dlContentLength: dlResponse.headers.get('Content-Length'),
+                dlReceivedBytes: dlBuf.byteLength
             }};
-        }} catch (err) {{
-            console.error('❌ JS error', err);
-            return {{ error: err.toString() }};
-        }}
-    }})()"""
 
     from streamlit_javascript import st_javascript
 
@@ -144,13 +143,17 @@ if st.session_state.test_id:
         col1.metric("Download", f"{result['download']} Mbps", delta=f"{result['dlTime']} s")
         col2.metric("Upload", f"{result['upload']} Mbps", delta=f"{result['ulTime']} s")
         log.info(
-            "Speed-test complete (v%s): ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s",
+            "Speed-test complete (v%s): ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s, DL Status: %s %s, DL Content-Length: %s, DL Received Bytes: %s",
             __version__,
             result['download'],
             result['dlTime'],
             result['upload'],
             result['ulTime'],
             result['totalTime'],
+            result['dlStatus'],
+            result['dlStatusText'],
+            result['dlContentLength'],
+            result['dlReceivedBytes'],
         )
     else:
         st.error(f"JavaScript execution error: {result}")
