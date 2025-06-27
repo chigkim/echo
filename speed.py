@@ -2,10 +2,11 @@ import os
 import gc
 import uuid
 import logging
+import time
 
 import streamlit as st
 
-__version__ = "0.0.9" # Incrementing version for this significant change
+__version__ = "0.0.10" # Incrementing version for upload measurement
 
 # ----------------------------------------------------------------------------
 # Logging
@@ -50,22 +51,31 @@ if st.session_state.test_id:
         js_code = f.read()
     js_code = js_code.replace("__SIZE_PLACEHOLDER__", str(size_bytes))
 
+    ul_start_time = time.time()
     result = st_javascript(js_code, key=st.session_state.test_id)
+    ul_end_time = time.time()
+    ul_time_s = ul_end_time - ul_start_time
+
     log.info("Component returned: %s", result)
 
     if not result or result == 0:
         st.stop()
 
     if isinstance(result, dict) and not result.get("error"):
+        # Calculate upload speed on Python side
+        ul_mbps = (size_bytes * 8) / ul_time_s / 1e6 if ul_time_s > 0 else 0
+
         st.metric("Total time", f"{result['totalTime']} s")
         col1, col2 = st.columns(2)
         col1.metric("Download (simulated)", f"{result['download']} Mbps", delta=f"{result['dlTime']} s")
-        col2.metric("Upload (Streamlit transfer)", "N/A", delta="N/A")
+        col2.metric("Upload (Streamlit transfer)", f"{ul_mbps:.2f} Mbps", delta=f"{ul_time_s:.2f} s")
         log.info(
-            "Speed-test complete (v%s): ↓ %s Mbps (%s s), total time %s s",
+            "Speed-test complete (v%s): ↓ %s Mbps (%s s), ↑ %s Mbps (%s s), total time %s s",
             __version__,
             result['download'],
             result['dlTime'],
+            f"{ul_mbps:.2f}",
+            f"{ul_time_s:.2f}",
             result['totalTime'],
         )
         if "debugLogs" in result:
