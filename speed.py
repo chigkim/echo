@@ -128,8 +128,11 @@ if st.session_state.test_id:
                 dlContentLength: dlResponse.headers.get('Content-Length'),
                 dlReceivedBytes: dlBuf.byteLength
             }};
-
-    from streamlit_javascript import st_javascript
+        }} catch (err) {{
+            console.error('❌ JS error', err);
+            return {{ error: err.toString() }};
+        }}
+    }})()"""
 
     result = st_javascript(js_code, key=st.session_state.test_id)
     log.info("Component returned: %s", result)
