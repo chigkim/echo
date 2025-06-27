@@ -86,21 +86,33 @@ if st.session_state.test_id:
             const dlBuf   = await fetch(`/speedtest/download/${{SIZE}}`).then(r => r.arrayBuffer());
             const dlEnd   = performance.now();
             const dlTimeS = (dlEnd - dlStart) / 1000;
-            const dlMbps  = (dlBuf.byteLength * 8) / dlTimeS / 1e6;
-            console.log('⬇️ Download', dlBuf.byteLength, 'bytes in', dlTimeS, 's →', dlMbps.toFixed(2), 'Mbps');
+            const dlBytes = dlBuf.byteLength;
+            const dlBits = dlBytes * 8;
+            const dlBps = dlBits / dlTimeS; // Bits per second
+            const dlMbps = dlBps / 1000000; // Mega bits per second
+            console.log('⬇️ Download', dlBytes, 'bytes in', dlTimeS.toFixed(2), 's →', dlMbps.toFixed(2), 'Mbps');
 
             // —— UPLOAD ——
             const ulStart = performance.now();
             await fetch('/speedtest/upload', {{ method: 'POST', body: dlBuf }});
             const ulEnd   = performance.now();
             const ulTimeS = (ulEnd - ulStart) / 1000;
-            const ulMbps  = (dlBuf.byteLength * 8) / ulTimeS / 1e6;
-            console.log('⬆️ Upload', dlBuf.byteLength, 'bytes in', ulTimeS, 's →', ulMbps.toFixed(2), 'Mbps');
+            const ulBytes = dlBuf.byteLength;
+            const ulBits = ulBytes * 8;
+            const ulBps = ulBits / ulTimeS; // Bits per second
+            const ulMbps = ulBps / 1000000; // Mega bits per second
+            console.log('⬆️ Upload', ulBytes, 'bytes in', ulTimeS.toFixed(2), 's →', ulMbps.toFixed(2), 'Mbps');
 
             const totalTime = (performance.now() - start) / 1000;
             console.log('🏁 Speed-test complete in', totalTime.toFixed(2), 's');
 
-            return {{ download: dlMbps.toFixed(2), upload: ulMbps.toFixed(2), totalTime: totalTime.toFixed(2), dlTime: dlTimeS.toFixed(2), ulTime: ulTimeS.toFixed(2) }};
+            return {{
+                download: dlMbps.toFixed(2),
+                upload: ulMbps.toFixed(2),
+                totalTime: totalTime.toFixed(2),
+                dlTime: dlTimeS.toFixed(2),
+                ulTime: ulTimeS.toFixed(2)
+            }};
         }} catch (err) {{
             console.error('❌ JS error', err);
             return {{ error: err.toString() }};
